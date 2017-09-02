@@ -42,9 +42,9 @@ public struct InstagramUser: InstagramModel {
     public
     init?(data: AnyObject) {
         guard let id  =   data["id"] as? String,
-            fullName        =   data["full_name"] as? String,
-            profilePicture  =   data["profile_picture"] as? String,
-            username        =   data["username"] as? String
+            let fullName        =   data["full_name"] as? String,
+            let profilePicture  =   data["profile_picture"] as? String,
+            let username        =   data["username"] as? String
             else { return nil }
         
         self.id = id
@@ -73,8 +73,8 @@ public struct InstagramRelationship: InstagramModel {
     
     public init?(data: AnyObject) {
         guard let id  =   data["id"] as? String,
-            outgoingStatus = data["outgoing_status"] as? String,
-            incomingStatus = data["incoming_status"] as? String
+            let outgoingStatus = data["outgoing_status"] as? String,
+            let incomingStatus = data["incoming_status"] as? String
             else { return nil}
         
         self.id = id
@@ -107,9 +107,9 @@ public struct InstagramMedia: InstagramModel {
     
     public init?(data: AnyObject) {
         guard let id = data["id"] as? String,
-        typeString = data["type"] as? String,
-        type = InstagramMediaType(rawValue: typeString),
-            link = data["link"] as? String else {
+        let typeString = data["type"] as? String,
+        let type = InstagramMediaType(rawValue: typeString),
+            let link = data["link"] as? String else {
                 return nil
         }
 
@@ -117,24 +117,25 @@ public struct InstagramMedia: InstagramModel {
         self.type = type
         self.link = link
         
-        if let images = data["images"], standardResolution = images!["standard_resolution"], url = standardResolution!["url"] {
-            self.standardResolutionURL = url as! String
+        if let images = data["images"] as? [String: Any],
+            let standardResolution = images["standard_resolution"] as? [String: String],
+            let url = standardResolution["url"] {
+            self.standardResolutionURL = url
         }
-
     }
     
     /// Gets the image data for the current InstagramImage object
-    public func getImageData(closure: (NSData?) -> Void) {
+    public func getImageData(_ closure: @escaping (Data?) -> Void) {
         print("Getting image \(self)")
-        dispatch_async(dispatch_get_global_queue(QOS_CLASS_UTILITY, 0)) {
-            print(NSURL(string: self.standardResolutionURL))
-            if let url = NSURL(string: self.standardResolutionURL), let data = NSData(contentsOfURL: url) {
-                dispatch_async(dispatch_get_main_queue()) {
+        DispatchQueue.global(qos: DispatchQoS.QoSClass.utility).async {
+            // print(URL(string: self.standardResolutionURL))
+            if let url = URL(string: self.standardResolutionURL), let data = try? Data(contentsOf: url) {
+                DispatchQueue.main.async {
                     print("Got image")
                     closure(data)
                 }
             } else {
-                dispatch_async(dispatch_get_main_queue()) {
+                DispatchQueue.main.async {
                     print("Failed to get image")
                     closure(nil)
                 }
